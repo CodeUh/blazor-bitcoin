@@ -16,5 +16,8 @@
     <ProjectReference Include="..\Shared\BlazorBitcoin.Shared.csproj" />
   </ItemGroup>
 
-
+	<PropertyGroup>
+		<PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
+	</PropertyGroup>
+	
 </Project>

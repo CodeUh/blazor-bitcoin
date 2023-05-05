@@ -6,7 +6,7 @@
 
 
 <PageTitle>Blazor Bitcoin</PageTitle>
-@if (State.BlockChainInfo.Blocks == 0)
+@if (State.BlockChainInfo.Result.Blocks == 0)
 {
     <div class="loading-container">
         <div class="loading-shapes">
@@ -29,7 +29,7 @@ else
         <div class="col-lg-3 col-md-6">
             <RadzenCard Title="Blocks" Icon="chart-line">
                 <div class="text-center">
-                    <h2>@(State.BlockChainInfo.Blocks)</h2>
+                    <h2>@(State.BlockChainInfo.Result.Blocks)</h2>
                     <small class="text-muted">Block Height</small>
                 </div>
             </RadzenCard>
@@ -37,24 +37,24 @@ else
         <div class="col-lg-3 col-md-6">
             <RadzenCard Title="Difficulty" Icon="clipboard-list">
                 <div class="text-center">
-                    <h2>@(State.BlockChainInfo.Difficulty)</h2>
-                    <small class="text-muted">Last 30 Days</small>
+                    <h2>@(State.BlockChainInfo.Result.Difficulty)</h2>
+                    <small class="text-muted">Difficulty</small>
                 </div>
             </RadzenCard>
         </div>
         <div class="col-lg-3 col-md-6">
-            <RadzenCard Title="Customers" Icon="users">
+            <RadzenCard Title="Median Time" Icon="users">
                 <div class="text-center">
-                    <h2>1,234</h2>
-                    <small class="text-muted">Total Customers</small>
+                    <h2>@(State.BlockChainInfo.Result.MedianDateTime.ToString("yyyy-MM-dd HH:mm:ss"))</h2>
+                    <small class="text-muted">Median Time</small>
                 </div>
             </RadzenCard>
         </div>
         <div class="col-lg-3 col-md-6">
-            <RadzenCard Title="Products" Icon="box">
+            <RadzenCard Title="Disk Size" Icon="box">
                 <div class="text-center">
-                    <h2>345</h2>
-                    <small class="text-muted">Total Products</small>
+                    <h2>@(State.BlockChainInfo.Result.SizeOnDisk / 1073741824)GB</h2>
+                    <small class="text-muted">Disk Size</small>
                 </div>
             </RadzenCard>
         </div>
@@ -127,19 +127,29 @@ else
 @code {
     protected override async Task OnInitializedAsync()
     {
+        var timer = new System.Timers.Timer(500);
+        timer.Elapsed += async (sender, e) => await RefreshBlockchainInfo();
+        timer.AutoReset = true;
+        timer.Enabled = true;
+
+        await RefreshBlockchainInfo();
+    }
+    
+    private async Task RefreshBlockchainInfo()
+    {
         try
         {
             var resp = await Client.GetAsync($"{NavMan.BaseUri}api/blockchaininfo");
             resp.EnsureSuccessStatusCode();
             var content = await resp.Content.ReadAsStringAsync();
-            if(string.IsNullOrEmpty(content)) { return; }
-            State.BlockChainInfo = JsonSerializer.Deserialize<BlockchainInfo>(content);
+            if (string.IsNullOrEmpty(content)) { return; }
+            State.BlockChainInfo = JsonSerializer.Deserialize<BlockchainInfoResponse>(content);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             LogError(ex.Message, "Error pulling blockchaininfo");
         }
-
+        StateHasChanged();
     }
 
     private void LogError(string message,string title)

@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.ResponseCompression;
+using System.Net;
+using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +8,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
+ServicePointManager.DefaultConnectionLimit = 10;
+var client = new HttpClient();
+client.BaseAddress = new Uri("http://localhost:8332/");
+var authValue = new AuthenticationHeaderValue(
+    "Basic", Convert.ToBase64String(
+        System.Text.ASCIIEncoding.ASCII.GetBytes(
+            $"{Environment.GetEnvironmentVariable("btcrpcuser")}:{Environment.GetEnvironmentVariable("btcrpcpw")}")));
+client.DefaultRequestHeaders.Authorization = authValue;
+builder.Services.AddSingleton<HttpClient>(client);
 
 var app = builder.Build();
 

@@ -1,9 +1,12 @@
-﻿using BlazorBitcoin.Shared;
+﻿using BlazorBitcoin.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace BlazorBitcoin.Server.Controllers
@@ -14,22 +17,16 @@ namespace BlazorBitcoin.Server.Controllers
     {
         private readonly HttpClient _client;
 
-        public BlockchainController()
+        public BlockchainController(HttpClient client)
         {
-            _client = new HttpClient();
-            _client.BaseAddress = new Uri("http://localhost:8332/");
-            var authValue = new AuthenticationHeaderValue(
-                "Basic", Convert.ToBase64String(
-                    System.Text.ASCIIEncoding.ASCII.GetBytes(
-                        $"{Environment.GetEnvironmentVariable("btcrpcuser")}:{Environment.GetEnvironmentVariable("btcrpcuser")}")));
-            _client.DefaultRequestHeaders.Authorization = authValue;
+            _client = client;
         }
 
         [HttpGet("blockchaininfo")]
-        public async Task<BlockchainInfo> GetBlockchainInfo()
+        public async Task<BlockchainInfoResponse> GetBlockchainInfo()
         {
             //TODO:Hack to get around working api
-            var blockchainInfo = new BlockchainInfo() { Blocks=1 };
+            var blockchainInfo = new BlockchainInfoResponse() { Result = new BlockchainInfoResult() { Blocks = 1 } };
             try
             {
                 var request = new
@@ -47,9 +44,9 @@ namespace BlazorBitcoin.Server.Controllers
                 if (!response.IsSuccessStatusCode)
                 {
                 }
-
-                blockchainInfo = JsonConvert.DeserializeObject<BlockchainInfo>(await response.Content.ReadAsStringAsync());
-                return blockchainInfo;
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var blockchainInfoResponse = JsonConvert.DeserializeObject<BlockchainInfoResponse>(responseContent);
+                return blockchainInfoResponse;
             }
             catch(Exception ex)
             {
@@ -59,5 +56,51 @@ namespace BlazorBitcoin.Server.Controllers
             }
             
         }
+
+        [HttpGet("block/{height}")]
+        public async Task<ActionResult<BlockResponse>> GetBlock(int height = 0)
+        {
+            
+            var rpcRequest = new 
+            {
+                jsonrpc = "1.0",
+                id = "1",
+                method = "getblockhash",
+                @params = new object[] { height }
+            };
+
+            var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(rpcRequest), Encoding.UTF8, "application/json-rpc");
+            
+
+            var response = await _client.PostAsync("", content);
+            //response.EnsureSuccessStatusCode();
+
+            var blockHash = JsonConvert.DeserializeObject<dynamic>(await response.Content.ReadAsStringAsync());
+
+            rpcRequest = new
+            {
+                jsonrpc = "1.0",
+                id = "2",
+                method = "getblock",
+                @params = new object[] { blockHash.result.ToString(), 2 }
+            };
+
+            
+            content = new StringContent(System.Text.Json.JsonSerializer.Serialize(rpcRequest), Encoding.UTF8, "application/json-rpc");
+            
+
+            response = await _client.PostAsync("", content);
+            //response.EnsureSuccessStatusCode();
+
+            var blockJson = await response.Content.ReadAsStringAsync();
+
+            var block = System.Text.Json.JsonSerializer.Deserialize<BlockResponse>(blockJson, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            return block;
+        }
     }
 }
+
