@@ -23,10 +23,57 @@
 }
 else
 {
-    <h1 class="text-center mb-4">Bitcon Dashboard</h1>
-    <div class="row">
-        <div class="col-12 w-100">
-            <RadzenCard Title="Latest Orders" Icon="clipboard-list">
+    <div class="w-100 h-100">
+        <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
+   @*         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Class="rz-p-4 rz-mb-6 rz-border-radius-1" Style="border: var(--rz-grid-cell-border);">
+                <RadzenCheckBox @bind-Value="@smooth" Name="smooth"></RadzenCheckBox>
+                <RadzenLabel Text="Smooth" For="smooth" Class="rz-mr-6" />
+                <RadzenCheckBox @bind-Value="@showDataLabels" Name="dataLabels"></RadzenCheckBox>
+                <RadzenLabel Text="Show Data Labels" For="dataLabels" />
+            </RadzenStack>*@
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Class="w-100 pt-3 rainbow" >
+                <RadzenChart>
+                    <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="NTx" ValueProperty="Result.NTx" RenderingOrder="1">
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenAreaSeries>
+                    <RadzenCategoryAxis Padding="20" Formatter="@FormatAsNum" />
+                    <RadzenValueAxis Formatter="@FormatAsNum">
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="#" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+                <RadzenChart>
+                    <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Size" ValueProperty="Result.Size">
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenAreaSeries>
+                    <RadzenCategoryAxis Padding="20" Formatter="@FormatAsNum" />
+                    <RadzenValueAxis Formatter="@FormatAsNum">
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="#" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+                <RadzenChart>
+                    <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Weight" ValueProperty="Result.Weight">
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenAreaSeries>
+                    <RadzenCategoryAxis Padding="20" Formatter="@FormatAsNum" />
+                    <RadzenValueAxis Formatter="@FormatAsNum">
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="#" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+                <RadzenChart>
+                    <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Stripped Size" ValueProperty="Result.StrippedSize">
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenAreaSeries>
+                    <RadzenCategoryAxis Padding="20" Formatter="@FormatAsNum" />
+                    <RadzenValueAxis Formatter="@FormatAsNum">
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="#" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+            </RadzenStack>
+            <RadzenCard Title="Latest blocks" Icon="clipboard-list" >
                 <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowVirtualization="true"  AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" AllowPaging="false"
                             Data="@State.Blocks" TItem="BlockResponse" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or">
                     <Columns>
@@ -47,14 +94,15 @@ else
                     </Columns>
                 </RadzenDataGrid>
             </RadzenCard>
-        </div>
+        </RadzenStack>
     </div>
 }
 
-
 @code {
     public int blockHeight { get; set; } = 0;
-    public int lastBlockHeight { get; set; }= 0;
+    public int lastBlockHeight { get; set; } = 0;
+    public bool smooth = true;
+    public bool showDataLabels = false;
     protected override async Task OnInitializedAsync()
     {
         var tRate = 80;
@@ -114,6 +162,23 @@ else
     private void LogError(string message,string title)
     {
         DialogService.Alert(message, title, new AlertOptions() { OkButtonText = "Continue" });
+    }
+
+
+
+    string FormatAsNum(object value)
+    {
+        return ((int)value).ToString("N0", System.Globalization.CultureInfo.CreateSpecificCulture("en-US"));
+    }
+
+    string FormatAs(object value)
+    {
+        if (value != null)
+        {
+            return Convert.ToDateTime(value).ToString("MMM");
+        }
+
+        return string.Empty;
     }
 
 }

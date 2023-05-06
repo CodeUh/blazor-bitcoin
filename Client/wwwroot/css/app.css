@@ -2,11 +2,10 @@
     margin: 0;
     padding: 0;
 }
-/*adding background to section
-          and animation named color-change*/
-.row {
-    animation: color-change 10s linear infinite;
+.rainbow {
+    animation: color-change 5s linear infinite;
 }
+
 
 /* applying filter at different angle
           on different interval using keyframe*/
@@ -23,13 +22,6 @@
         filter: hue-rotate(360deg);
     }
 }
-
-
-
-
-
-
-
 
 
 html, body {
