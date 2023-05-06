@@ -24,76 +24,71 @@
 else
 {
     <div class="w-100 h-100">
-        <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap">
-   @*         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Class="rz-p-4 rz-mb-6 rz-border-radius-1" Style="border: var(--rz-grid-cell-border);">
-                <RadzenCheckBox @bind-Value="@smooth" Name="smooth"></RadzenCheckBox>
-                <RadzenLabel Text="Smooth" For="smooth" Class="rz-mr-6" />
-                <RadzenCheckBox @bind-Value="@showDataLabels" Name="dataLabels"></RadzenCheckBox>
-                <RadzenLabel Text="Show Data Labels" For="dataLabels" />
-            </RadzenStack>*@
-            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Class="w-100 pt-3 rainbow" >
-                <RadzenChart>
-                    <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="NTx" ValueProperty="Result.NTx" RenderingOrder="1">
-                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
-                    </RadzenAreaSeries>
-                    <RadzenCategoryAxis Padding="20" Formatter="@FormatAsNum" />
-                    <RadzenValueAxis Formatter="@FormatAsNum">
-                        <RadzenGridLines Visible="true" />
-                        <RadzenAxisTitle Text="#" />
-                    </RadzenValueAxis>
-                </RadzenChart>
-                <RadzenChart>
+        <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap" class="vw-100">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" class="pt-3 rainbow vw-100">
+                <RadzenChart Style="width:25%">
                     <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Size" ValueProperty="Result.Size">
                         <RadzenSeriesDataLabels Visible="@showDataLabels" />
                     </RadzenAreaSeries>
-                    <RadzenCategoryAxis Padding="20" Formatter="@FormatAsNum" />
+                    <RadzenCategoryAxis Padding="0" Formatter="@FormatAsNum" />
                     <RadzenValueAxis Formatter="@FormatAsNum">
                         <RadzenGridLines Visible="true" />
                         <RadzenAxisTitle Text="#" />
                     </RadzenValueAxis>
                 </RadzenChart>
-                <RadzenChart>
-                    <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Weight" ValueProperty="Result.Weight">
-                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
-                    </RadzenAreaSeries>
-                    <RadzenCategoryAxis Padding="20" Formatter="@FormatAsNum" />
-                    <RadzenValueAxis Formatter="@FormatAsNum">
-                        <RadzenGridLines Visible="true" />
-                        <RadzenAxisTitle Text="#" />
-                    </RadzenValueAxis>
-                </RadzenChart>
-                <RadzenChart>
+                <RadzenChart Style="width:25%">
                     <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Stripped Size" ValueProperty="Result.StrippedSize">
                         <RadzenSeriesDataLabels Visible="@showDataLabels" />
                     </RadzenAreaSeries>
-                    <RadzenCategoryAxis Padding="20" Formatter="@FormatAsNum" />
+                    <RadzenCategoryAxis Padding="0" Formatter="@FormatAsNum" />
+                    <RadzenValueAxis Formatter="@FormatAsNum">
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="#" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+                <RadzenChart Style="width:25%">
+                    <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Weight" ValueProperty="Result.Weight">
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenAreaSeries>
+                    <RadzenCategoryAxis Padding="0" Formatter="@FormatAsNum" />
+                    <RadzenValueAxis Formatter="@FormatAsNum">
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="#" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+                <RadzenChart Style="width:25%">
+                    <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="NTx" ValueProperty="Result.NTx" RenderingOrder="1">
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenAreaSeries>
+                    <RadzenCategoryAxis Padding="0" Formatter="@FormatAsNum" />
                     <RadzenValueAxis Formatter="@FormatAsNum">
                         <RadzenGridLines Visible="true" />
                         <RadzenAxisTitle Text="#" />
                     </RadzenValueAxis>
                 </RadzenChart>
             </RadzenStack>
-            <RadzenCard Title="Latest blocks" Icon="clipboard-list" >
-                <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowVirtualization="true"  AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" AllowPaging="false"
-                            Data="@State.Blocks" TItem="BlockResponse" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or">
-                    <Columns>
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Height" Filterable="false" Title="Height" Frozen="true" Width="80px" TextAlign="TextAlign.Center" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.DisplayTime" Title="Time" Frozen="true" Width="160px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Confirmations" Title="Confirmations" Filterable="false" Width="80px" TextAlign="TextAlign.Center"/>
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Size" Title="Size" Width="160px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Weight" Title="Weight" Width="200px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.NTx" Title="Transactions" Width="120px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Version" Title="Version" FormatString="{0:d}" Width="160px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.VersionHex" Title="Version Hex" FormatString="{0:d}" Width="160px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.MerkleRoot" Title="Merkle Root" Width="200px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Nonce" Title="Nonce" Width="160px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Bits" Title="Bits" Width="160px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Difficulty" Title="Difficulty" Width="160px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.ChainWork" Title="Chain Work" Width="160px" />
-                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.StrippedSize" Title="StrippedSize" Width="160px" />
-                    </Columns>
-                </RadzenDataGrid>
-            </RadzenCard>
+            <RadzenStack>
+
+            </RadzenStack>
+            <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowVirtualization="true"  AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" AllowPaging="false"
+                        Data="@State.Blocks" TItem="BlockResponse" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or">
+                <Columns>
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Height" Filterable="false" Title="Height" Frozen="true" Width="80px" TextAlign="TextAlign.Center" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.DisplayTime" Title="Time" Frozen="true" Width="180px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Confirmations" Title="Confirms" Filterable="false" Width="100px" TextAlign="TextAlign.Center"/>
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Size" Title="Size" Width="80px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Weight" Title="Weight" Width="95px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.NTx" Title="NTx" Width="75px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Version" Title="Version" FormatString="{0:d}" Width="105px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.VersionHex" Title="V Hex" FormatString="{0:d}" Width="105px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.MerkleRoot" Title="Merkle Root" Width="565px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Nonce" Title="Nonce" Width="110px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Bits" Title="Bits" Width="85px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Difficulty" Title="Difficulty" Width="150px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.ChainWork" Title="Chain Work" Width="570px" />
+                    <RadzenDataGridColumn TItem="BlockResponse" Property="Result.StrippedSize" Title="StrippedSize" Width="140px" />
+                </Columns>
+            </RadzenDataGrid>
         </RadzenStack>
     </div>
 }
@@ -102,7 +97,10 @@ else
     public int blockHeight { get; set; } = 0;
     public int lastBlockHeight { get; set; } = 0;
     public bool smooth = true;
-    public bool showDataLabels = false;
+    public bool showDataLabels = true;
+    public int blockLimit { get; set; } = 10;
+    public int blockCnt { get; set; } = 0;
+
     protected override async Task OnInitializedAsync()
     {
         var tRate = 80;
@@ -130,6 +128,9 @@ else
                 var bContent = await t.Result.Content.ReadAsStringAsync();
                 State.Blocks.Add(JsonSerializer.Deserialize<BlockResponse>(bContent));
                 blockHeight--;
+                blockCnt++;
+                if (blockLimit < blockCnt) { State.Blocks.Remove(State.Blocks.MaxBy(b => b.Result.Height)); }
+                State.Blocks = State.Blocks.ToList();
                 StateHasChanged();
             });
             await bTask;
@@ -164,11 +165,9 @@ else
         DialogService.Alert(message, title, new AlertOptions() { OkButtonText = "Continue" });
     }
 
-
-
     string FormatAsNum(object value)
     {
-        return ((int)value).ToString("N0", System.Globalization.CultureInfo.CreateSpecificCulture("en-US"));
+        return value.ToString();
     }
 
     string FormatAs(object value)
