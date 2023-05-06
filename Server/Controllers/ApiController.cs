@@ -25,7 +25,6 @@ namespace BlazorBitcoin.Server.Controllers
         [HttpGet("blockchaininfo")]
         public async Task<BlockchainInfoResponse> GetBlockchainInfo()
         {
-            //TODO:Hack to get around working api
             var blockchainInfo = new BlockchainInfoResponse() { Result = new BlockchainInfoResult() { Blocks = 1 } };
             try
             {
@@ -50,8 +49,6 @@ namespace BlazorBitcoin.Server.Controllers
             }
             catch(Exception ex)
             {
-                //TODO:Hack to get around working api
-
                 return blockchainInfo;
             }
             
@@ -73,7 +70,6 @@ namespace BlazorBitcoin.Server.Controllers
             
 
             var response = await _client.PostAsync("", content);
-            //response.EnsureSuccessStatusCode();
 
             var blockHash = JsonConvert.DeserializeObject<dynamic>(await response.Content.ReadAsStringAsync());
 
@@ -82,7 +78,7 @@ namespace BlazorBitcoin.Server.Controllers
                 jsonrpc = "1.0",
                 id = "2",
                 method = "getblock",
-                @params = new object[] { blockHash.result.ToString(), 2 }
+                @params = new object[] { blockHash.result.ToString(), 1 }
             };
 
             
@@ -90,7 +86,6 @@ namespace BlazorBitcoin.Server.Controllers
             
 
             response = await _client.PostAsync("", content);
-            //response.EnsureSuccessStatusCode();
 
             var blockJson = await response.Content.ReadAsStringAsync();
 

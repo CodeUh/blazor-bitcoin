@@ -1,4 +1,38 @@
-﻿html, body {
+﻿body {
+    margin: 0;
+    padding: 0;
+}
+/*adding background to section
+          and animation named color-change*/
+.row {
+    animation: color-change 10s linear infinite;
+}
+
+/* applying filter at different angle
+          on different interval using keyframe*/
+@keyframes color-change {
+    0% {
+        filter: hue-rotate(0deg);
+    }
+
+    50% {
+        filter: hue-rotate(180deg);
+    }
+
+    100% {
+        filter: hue-rotate(360deg);
+    }
+}
+
+
+
+
+
+
+
+
+
+html, body {
     font-family: 'Roboto Mono', monospace;
 }
 

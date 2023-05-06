@@ -11,7 +11,9 @@ namespace BlazorBitcoin.Shared.Models
         public IndexState()
         {
             BlockChainInfo = new BlockchainInfoResponse();
+            Blocks = new List<BlockResponse>();
         }
         public BlockchainInfoResponse BlockChainInfo { get; set; }
+        public List<BlockResponse> Blocks { get; set; }
     }
 }

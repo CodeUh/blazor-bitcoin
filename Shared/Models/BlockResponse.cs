@@ -2,6 +2,7 @@
 {
     using System.Collections.Generic;
     using System.Text.Json.Serialization;
+    using BlazorBitcoin.Shared.Helpers;
     using Newtonsoft.Json;
 
     public class BlockResponse
@@ -49,6 +50,9 @@
         [JsonPropertyName("time")]
         public int Time { get; set; } = 0;
 
+        public string DisplayTime => UnixTimeHelper.UnixTimeToDateTime(Time).ToString("yyyy-MM-dd HH:mm:ss");
+        public DateTime TimeDateTime => UnixTimeHelper.UnixTimeToDateTime(Time);
+
         [JsonProperty("mediantime")]
         [JsonPropertyName("mediantime")]
         public int MedianTime { get; set; } = 0;
@@ -93,9 +97,10 @@
         [JsonPropertyName("weight")]
         public int Weight { get; set; } = 0;
 
-        [JsonProperty("tx")]
-        [JsonPropertyName("tx")]
-        public List<Transaction> Transactions { get; set; } = new List<Transaction>();
+        //TODO: think about this...
+        //[JsonProperty("tx")]
+        //[JsonPropertyName("tx")]
+        //public List<Transaction> Transactions { get; set; } = new List<Transaction>();
     }
 
     public class Transaction

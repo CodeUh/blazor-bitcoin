@@ -24,100 +24,28 @@
 else
 {
     <h1 class="text-center mb-4">Bitcon Dashboard</h1>
-
     <div class="row">
-        <div class="col-lg-3 col-md-6">
-            <RadzenCard Title="Blocks" Icon="chart-line">
-                <div class="text-center">
-                    <h2>@(State.BlockChainInfo.Result.Blocks)</h2>
-                    <small class="text-muted">Block Height</small>
-                </div>
-            </RadzenCard>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <RadzenCard Title="Difficulty" Icon="clipboard-list">
-                <div class="text-center">
-                    <h2>@(State.BlockChainInfo.Result.Difficulty)</h2>
-                    <small class="text-muted">Difficulty</small>
-                </div>
-            </RadzenCard>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <RadzenCard Title="Median Time" Icon="users">
-                <div class="text-center">
-                    <h2>@(State.BlockChainInfo.Result.MedianDateTime.ToString("yyyy-MM-dd HH:mm:ss"))</h2>
-                    <small class="text-muted">Median Time</small>
-                </div>
-            </RadzenCard>
-        </div>
-        <div class="col-lg-3 col-md-6">
-            <RadzenCard Title="Disk Size" Icon="box">
-                <div class="text-center">
-                    <h2>@(State.BlockChainInfo.Result.SizeOnDisk / 1073741824)GB</h2>
-                    <small class="text-muted">Disk Size</small>
-                </div>
-            </RadzenCard>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-6">
+        <div class="col-12 w-100">
             <RadzenCard Title="Latest Orders" Icon="clipboard-list">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Total</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>345</td>
-                            <td>John Smith</td>
-                            <td>$123.45</td>
-                            <td>05/01/2023</td>
-                        </tr>
-                        <tr>
-                            <td>346</td>
-                            <td>Jane Doe</td>
-                            <td>$45.67</td>
-                            <td>05/01/2023</td>
-                        </tr>
-                        <tr>
-                            <td>347</td>
-                            <td>Bob Johnson</td>
-                            <td>$98.76</td>
-                            <td>04/30/2023</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </RadzenCard>
-        </div>
-        <div class="col-lg-6">
-            <RadzenCard Title="Top Products" Icon="box">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Product Name</th>
-                            <th>Quantity Sold</th>
-                            <th>Total Sales</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Product A</td>
-                            <td>10</td>
-                            <td>$100.00</td>
-                        </tr>
-                        <tr>
-                            <td>Product B</td>
-                            <td>8</td>
-                            <td>$80.00</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowVirtualization="true"  AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" AllowPaging="false"
+                            Data="@State.Blocks" TItem="BlockResponse" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Height" Filterable="false" Title="Height" Frozen="true" Width="80px" TextAlign="TextAlign.Center" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.DisplayTime" Title="Time" Frozen="true" Width="160px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Confirmations" Title="Confirmations" Filterable="false" Width="80px" TextAlign="TextAlign.Center"/>
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Size" Title="Size" Width="160px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Weight" Title="Weight" Width="200px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.NTx" Title="Transactions" Width="120px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Version" Title="Version" FormatString="{0:d}" Width="160px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.VersionHex" Title="Version Hex" FormatString="{0:d}" Width="160px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.MerkleRoot" Title="Merkle Root" Width="200px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Nonce" Title="Nonce" Width="160px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Bits" Title="Bits" Width="160px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Difficulty" Title="Difficulty" Width="160px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.ChainWork" Title="Chain Work" Width="160px" />
+                        <RadzenDataGridColumn TItem="BlockResponse" Property="Result.StrippedSize" Title="StrippedSize" Width="160px" />
+                    </Columns>
+                </RadzenDataGrid>
             </RadzenCard>
         </div>
     </div>
@@ -125,29 +53,60 @@ else
 
 
 @code {
+    public int blockHeight { get; set; } = 0;
+    public int lastBlockHeight { get; set; }= 0;
     protected override async Task OnInitializedAsync()
     {
-        var timer = new System.Timers.Timer(500);
-        timer.Elapsed += async (sender, e) => await RefreshBlockchainInfo();
+        var tRate = 80;
+        var timer = new System.Timers.Timer(10000);
+        timer.Elapsed += async (sender, e) => RefreshBlockchainInfo();
         timer.AutoReset = true;
         timer.Enabled = true;
-
         await RefreshBlockchainInfo();
+        var timer2 = new System.Timers.Timer(tRate);
+        timer2.Elapsed += async (sender, e) => TickTock();
+        timer2.AutoReset = true;
+        timer2.Enabled = true;
     }
-    
+
+    private async Task TickTock()
+    {
+        Task<HttpResponseMessage> bTask;
+        if (blockHeight != lastBlockHeight)
+        {
+            bTask = Client.GetAsync($"{NavMan.BaseUri}api/block/{blockHeight}");
+            lastBlockHeight = blockHeight;
+            await bTask.ContinueWith(async t =>
+            {
+                t.Result.EnsureSuccessStatusCode();
+                var bContent = await t.Result.Content.ReadAsStringAsync();
+                State.Blocks.Add(JsonSerializer.Deserialize<BlockResponse>(bContent));
+                blockHeight--;
+                StateHasChanged();
+            });
+            await bTask;
+        }
+    }
+
     private async Task RefreshBlockchainInfo()
     {
-        try
+        Task<HttpResponseMessage> bciTask;
+
+        bciTask = Client.GetAsync($"{NavMan.BaseUri}api/blockchaininfo");
+
+        if (blockHeight == 0 || State.Blocks.Any(b => b.Result.Height == blockHeight)) 
         {
-            var resp = await Client.GetAsync($"{NavMan.BaseUri}api/blockchaininfo");
-            resp.EnsureSuccessStatusCode();
-            var content = await resp.Content.ReadAsStringAsync();
-            if (string.IsNullOrEmpty(content)) { return; }
-            State.BlockChainInfo = JsonSerializer.Deserialize<BlockchainInfoResponse>(content);
-        }
-        catch (Exception ex)
-        {
-            LogError(ex.Message, "Error pulling blockchaininfo");
+            await bciTask.ContinueWith(async t =>
+            {
+                t.Result.EnsureSuccessStatusCode();
+                var bciContent = await t.Result.Content.ReadAsStringAsync();
+                State.BlockChainInfo = JsonSerializer.Deserialize<BlockchainInfoResponse>(bciContent);
+                if (blockHeight == 0)
+                {
+                    blockHeight = State.BlockChainInfo.Result.Blocks;
+                }
+                StateHasChanged();
+            }); return;
         }
         StateHasChanged();
     }
@@ -158,3 +117,4 @@ else
     }
 
 }
+
