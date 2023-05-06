@@ -23,9 +23,9 @@
 }
 else
 {
-    <div class="w-100 h-100">
+    <div class="w-100 h-100 @backgroundColor @color">
         <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap" class="vw-100">
-            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" class="pt-3 rainbow vw-100">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" class="pt-3 vw-100">
                 <RadzenChart Style="width:25%">
                     <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Size" ValueProperty="Result.Size">
                         <RadzenSeriesDataLabels Visible="@showDataLabels" />
@@ -56,7 +56,7 @@ else
                         <RadzenAxisTitle Text="#" />
                     </RadzenValueAxis>
                 </RadzenChart>
-                <RadzenChart Style="width:25%">
+                <RadzenChart Style="width:25%" >
                     <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="NTx" ValueProperty="Result.NTx" RenderingOrder="1">
                         <RadzenSeriesDataLabels Visible="@showDataLabels" />
                     </RadzenAreaSeries>
@@ -71,7 +71,7 @@ else
 
             </RadzenStack>
             <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowVirtualization="true"  AllowAlternatingRows="false" FilterMode="FilterMode.Advanced" AllowSorting="true" AllowPaging="false"
-                        Data="@State.Blocks" TItem="BlockResponse" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or">
+                        Data="@State.Blocks" TItem="BlockResponse" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or" class="@backgroundColor">
                 <Columns>
                     <RadzenDataGridColumn TItem="BlockResponse" Property="Result.Height" Filterable="false" Title="Height" Frozen="true" Width="80px" TextAlign="TextAlign.Center" />
                     <RadzenDataGridColumn TItem="BlockResponse" Property="Result.DisplayTime" Title="Time" Frozen="true" Width="180px" />
@@ -96,21 +96,23 @@ else
 @code {
     public int blockHeight { get; set; } = 0;
     public int lastBlockHeight { get; set; } = 0;
-    public bool smooth = true;
-    public bool showDataLabels = true;
+    public bool smooth = false;
+    public bool showDataLabels = false;
     public int blockLimit { get; set; } = 10;
     public int blockCnt { get; set; } = 0;
+    string backgroundColor = "rz-background-color-base-800";
+    string color = "rz-color-base-100 rainbow";
 
     protected override async Task OnInitializedAsync()
     {
         var tRate = 80;
         var timer = new System.Timers.Timer(10000);
-        timer.Elapsed += async (sender, e) => RefreshBlockchainInfo();
+        timer.Elapsed += async (sender, e) => await RefreshBlockchainInfo();
         timer.AutoReset = true;
         timer.Enabled = true;
         await RefreshBlockchainInfo();
         var timer2 = new System.Timers.Timer(tRate);
-        timer2.Elapsed += async (sender, e) => TickTock();
+        timer2.Elapsed += async (sender, e) => await TickTock();
         timer2.AutoReset = true;
         timer2.Enabled = true;
     }
@@ -122,6 +124,7 @@ else
         {
             bTask = Client.GetAsync($"{NavMan.BaseUri}api/block/{blockHeight}");
             lastBlockHeight = blockHeight;
+              
             await bTask.ContinueWith(async t =>
             {
                 t.Result.EnsureSuccessStatusCode();
@@ -133,7 +136,7 @@ else
                 State.Blocks = State.Blocks.ToList();
                 StateHasChanged();
             });
-            await bTask;
+            
         }
     }
 
