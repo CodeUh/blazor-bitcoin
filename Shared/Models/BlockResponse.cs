@@ -97,6 +97,8 @@
         [JsonPropertyName("weight")]
         public int Weight { get; set; } = 0;
 
+        public int WeightM => Weight / 1000000;
+
         //TODO: think about this...
         //[JsonProperty("tx")]
         //[JsonPropertyName("tx")]

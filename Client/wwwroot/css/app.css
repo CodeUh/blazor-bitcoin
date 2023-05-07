@@ -3,9 +3,7 @@
     padding: 0;
     background-color: ref(.rz-background-color-series-7);
 }
-.rainbow {
-    animation: color-change 5s linear infinite;
-}
+1
 
 
 /* applying filter at different angle

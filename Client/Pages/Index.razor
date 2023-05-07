@@ -25,28 +25,31 @@ else
 {
     <div class="w-100 h-100 @backgroundColor @color">
         <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Start" Wrap="FlexWrap.Wrap" class="vw-100">
-            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" class="pt-3 vw-100">
-                <RadzenChart Style="width:25%">
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" class="vw-100 vh-75">
+                <RadzenChart class="vh-75 w-50">
                     <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Size" ValueProperty="Result.Size">
                         <RadzenSeriesDataLabels Visible="@showDataLabels" />
                     </RadzenAreaSeries>
-                    <RadzenCategoryAxis Padding="0" Formatter="@FormatAsNum" />
-                    <RadzenValueAxis Formatter="@FormatAsNum">
-                        <RadzenGridLines Visible="true" />
-                        <RadzenAxisTitle Text="#" />
-                    </RadzenValueAxis>
-                </RadzenChart>
-                <RadzenChart Style="width:25%">
                     <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Stripped Size" ValueProperty="Result.StrippedSize">
                         <RadzenSeriesDataLabels Visible="@showDataLabels" />
                     </RadzenAreaSeries>
                     <RadzenCategoryAxis Padding="0" Formatter="@FormatAsNum" />
-                    <RadzenValueAxis Formatter="@FormatAsNum">
+                    <RadzenValueAxis Formatter="@FormatAsMB">
                         <RadzenGridLines Visible="true" />
                         <RadzenAxisTitle Text="#" />
                     </RadzenValueAxis>
                 </RadzenChart>
-                <RadzenChart Style="width:25%">
+                @*<RadzenChart class="vh-100 w-25">
+                    <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Stripped Size" ValueProperty="Result.StrippedSize">
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenAreaSeries>
+                    <RadzenCategoryAxis Padding="0" Formatter="@FormatAsNum" />
+                    <RadzenValueAxis Formatter="@FormatAsMB">
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="#" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+                <RadzenChart class="vh-100 w-25">
                     <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="Weight" ValueProperty="Result.Weight">
                         <RadzenSeriesDataLabels Visible="@showDataLabels" />
                     </RadzenAreaSeries>
@@ -55,13 +58,13 @@ else
                         <RadzenGridLines Visible="true" />
                         <RadzenAxisTitle Text="#" />
                     </RadzenValueAxis>
-                </RadzenChart>
-                <RadzenChart Style="width:25%" >
+                </RadzenChart>*@
+                <RadzenChart class="vh-75 w-50">
                     <RadzenAreaSeries Smooth="@smooth" Data="@State.Blocks" CategoryProperty="Result.Height" Title="NTx" ValueProperty="Result.NTx" RenderingOrder="1">
                         <RadzenSeriesDataLabels Visible="@showDataLabels" />
                     </RadzenAreaSeries>
                     <RadzenCategoryAxis Padding="0" Formatter="@FormatAsNum" />
-                    <RadzenValueAxis Formatter="@FormatAsNum">
+                    <RadzenValueAxis Formatter="@FormatAsK">
                         <RadzenGridLines Visible="true" />
                         <RadzenAxisTitle Text="#" />
                     </RadzenValueAxis>
@@ -98,7 +101,7 @@ else
     public int lastBlockHeight { get; set; } = 0;
     public bool smooth = false;
     public bool showDataLabels = false;
-    public int blockLimit { get; set; } = 10;
+    public int blockLimit { get; set; } = 64;
     public int blockCnt { get; set; } = 0;
     string backgroundColor = "rz-background-color-base-800";
     string color = "rz-color-base-100 rainbow";
@@ -124,7 +127,7 @@ else
         {
             bTask = Client.GetAsync($"{NavMan.BaseUri}api/block/{blockHeight}");
             lastBlockHeight = blockHeight;
-              
+
             await bTask.ContinueWith(async t =>
             {
                 t.Result.EnsureSuccessStatusCode();
@@ -136,7 +139,7 @@ else
                 State.Blocks = State.Blocks.ToList();
                 StateHasChanged();
             });
-            
+
         }
     }
 
@@ -173,11 +176,31 @@ else
         return value.ToString();
     }
 
-    string FormatAs(object value)
+    string FormatAsMB(object value)
     {
         if (value != null)
         {
-            return Convert.ToDateTime(value).ToString("MMM");
+            return ((double)value / 1000000).ToString() + "MB";
+        }
+
+        return string.Empty;
+    }
+
+    string FormatAsK(object value)
+    {
+        if (value != null)
+        {
+            return ((double)value / 1000).ToString() + "K";
+        }
+
+        return string.Empty;
+    }
+
+    string FormatAsM(object value)
+    {
+        if (value != null)
+        {
+            return ((double)value / 1000000).ToString() + "";
         }
 
         return string.Empty;
