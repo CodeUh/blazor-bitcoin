@@ -1,9 +1,84 @@
-﻿body {
+﻿html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+}
+
+.plane {
+    position:relative;
+    background-image: url(https://www.turbotobias.dk/wp-content/uploads/2019/03/Fly-med-banner-TurboTobias-Graphics2.svg);
+    animation-duration: 1.8s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+#plane0 {
+    animation-name: fly;
+}
+
+#plane1 {
+    animation-name: fly3;
+}
+
+#plane2 {
+    animation-name: fly2;
+}
+
+@keyframes fly {
+    from {
+        right: 0;
+    }
+
+    to {
+        right: 200%;
+    }
+}
+@keyframes fly2 {
+    0% {
+        left: 150%;
+    }
+
+    80% {
+        left: -34%;
+    }
+    100% {
+        left: -34%;
+    }
+}
+@keyframes fly3 {
+    0% {
+        left: 0;
+    }
+    80% {
+        left: -34%;
+    }
+    100% {
+        left: -34%;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+body {
     margin: 0;
     padding: 0;
-    background-color: ref(.rz-background-color-series-7);
 }
-1
+
 
 
 /* applying filter at different angle
@@ -21,7 +96,6 @@
         filter: hue-rotate(360deg);
     }
 }
-
 
 html, body {
     font-family: 'Roboto Mono', monospace;

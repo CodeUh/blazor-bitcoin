@@ -25,6 +25,7 @@ namespace BlazorBitcoin.Server.Controllers
         [HttpGet("blockchaininfo")]
         public async Task<BlockchainInfoResponse> GetBlockchainInfo()
         {
+             
             var blockchainInfo = new BlockchainInfoResponse() { Result = new BlockchainInfoResult() { Blocks = 1 } };
             try
             {
@@ -40,9 +41,7 @@ namespace BlazorBitcoin.Server.Controllers
                 var content = new StringContent(requestJson, System.Text.Encoding.UTF8, "application/json");
 
                 var response = await _client.PostAsync("", content);
-                if (!response.IsSuccessStatusCode)
-                {
-                }
+
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var blockchainInfoResponse = JsonConvert.DeserializeObject<BlockchainInfoResponse>(responseContent);
                 return blockchainInfoResponse;
@@ -67,7 +66,6 @@ namespace BlazorBitcoin.Server.Controllers
             };
 
             var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(rpcRequest), Encoding.UTF8, "application/json-rpc");
-            
 
             var response = await _client.PostAsync("", content);
 
@@ -80,10 +78,8 @@ namespace BlazorBitcoin.Server.Controllers
                 method = "getblock",
                 @params = new object[] { blockHash.result.ToString(), 1 }
             };
-
             
             content = new StringContent(System.Text.Json.JsonSerializer.Serialize(rpcRequest), Encoding.UTF8, "application/json-rpc");
-            
 
             response = await _client.PostAsync("", content);
 
