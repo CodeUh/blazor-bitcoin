@@ -7,8 +7,12 @@ using Newtonsoft.Json;
 using BlazorBitcoin.Shared.Models;
 using System.Text.Json;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
-ServicePointManager.DefaultConnectionLimit = 10;
+ServicePointManager.DefaultConnectionLimit = 12;
+var options = new ParallelOptions { MaxDegreeOfParallelism = 32 };
 var client = new HttpClient();
 client.BaseAddress = new Uri("http://localhost:8332/");
 var authValue = new AuthenticationHeaderValue(
@@ -25,10 +29,12 @@ _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(Environment.GetEnvironmentV
 await using var session = _driver.AsyncSession();
 
 //var startingHeight = 788802;
-var startingHeight = 50;
-var blockCount = 50;
+var startingHeight = 0;
+var blockCount = 2000;
 BlockResponse prevBlock = null;
-for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockCount); currentHeight++)
+var stopwatch = new Stopwatch();
+stopwatch.Start();
+for (int currentHeight = startingHeight; currentHeight < (startingHeight + blockCount); currentHeight++)
 {
     try
     {
@@ -97,8 +103,8 @@ for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockC
                     var result = await tx.RunAsync(
                         "MATCH (a:Block), (b:Block) " +
                         "WHERE a.hash = $block.Result.Hash AND b.hash = $prevBlock.Result.Hash " +
-                        "CREATE (a)-[r:PREV_BLOCK]->(b) " +
-                        "CREATE (b)-[r2:NEXT_BLOCK]->(a) " +
+                        "CREATE (a)-[r:HAS_CHAIN]->(b) " +
+                        "CREATE (b)-[r2:HAS_CHAIN]->(a) " +
                         "RETURN type(r)",
                          new { prevBlock, block });
 
@@ -106,19 +112,20 @@ for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockC
                     return "";
                 });
         }
-
+        var ct = new CancellationToken();
         //Iterate over the transactions in the block
-        foreach(var trx in block.Result.Transactions)
+        await Parallel.ForEachAsync(block.Result.Transactions, options, async (trx,ct) =>
         {
+            var trxSession = _driver.AsyncSession();
             //check if the transaction is a coinbase transaction
             if (!string.IsNullOrEmpty(trx.Vin[0].Coinbase))
             {
                 //Create the coinbase node
-                var neo4jTransResp = await session.ExecuteWriteAsync(
+                var neo4jTransResp = await trxSession.ExecuteWriteAsync(
                     async tx =>
                     {
                         var result = await tx.RunAsync(
-                            "CREATE (a:Coinbase) " +
+                            "CREATE (a:Transaction) " +
                             "SET a.txid = $trx.TxId, " +
                             "a.hash = $trx.Hash, " +
                             "a.version = $trx.Version, " +
@@ -137,25 +144,27 @@ for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockC
                     });
 
                 //Create the coinbase IN_BLOCK relationship
-                neo4jTransResp = await session.ExecuteWriteAsync(
+                neo4jTransResp = await trxSession.ExecuteWriteAsync(
                     async tx =>
                     {
                         var result = await tx.RunAsync(
-                            "MATCH (a:Block), (b:Coinbase) " +
+                            "MATCH (a:Block), (b:Transaction) " +
                             "WHERE a.hash = $block.Result.Hash AND b.txid = $trx.TxId " +
                             "CREATE (b)-[r:IN_BLOCK]->(a) " +
+                            "CREATE (a)-[r2:HAS_COINBASE]->(b) " +
                             "RETURN type(r)",
                              new { trx, block });
 
                         var record = await result.ConsumeAsync();
                         return "";
                     });
-
-                //Iterate over the outputs in the coinbase transaction
-                foreach (var output in trx.Vout)
+                var ctVout = new CancellationToken();
+                //Iterate over the outputs in the transaction
+                await Parallel.ForEachAsync(trx.Vout, options, async (output, ctVout) =>
                 {
+                    var voutSession = _driver.AsyncSession();
                     //Create the output node 
-                    var neo4jOutputResp = await session.ExecuteWriteAsync(
+                    var neo4jOutputResp = await voutSession.ExecuteWriteAsync(
                         async tx =>
                         {
                             var result = await tx.RunAsync(
@@ -163,31 +172,33 @@ for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockC
                                 "SET a.value = $output.Value, " +
                                 "a.n = $output.N " +
                                 "WITH a " +
-                                "MATCH (b:Coinbase) " +
+                                "MATCH (b:Transaction) " +
                                 "WHERE b.txid = $trx.TxId " +
-                                "CREATE (a)-[r:OUTPUT_OF]->(b) " +
+                                "CREATE (a)-[r:HAS_OUTPUT]->(b) " +
                                 "CREATE (c:Address) " +
                                 "SET c.asm = $output.ScriptPubKey.Asm, " +
                                 "c.hex = $output.ScriptPubKey.Hex, " +
                                 "c.type = $output.ScriptPubKey.Type, " +
                                 "c.address = $output.ScriptPubKey.Address " +
                                 "CREATE (a)-[d:LOCKED_BY]->(c) " +
-                                "RETURN type(r) ", 
+                                "RETURN type(r) ",
                                 new { output, trx });
 
                             var record = await result.ConsumeAsync();
                             if (!string.IsNullOrEmpty(output.ScriptPubKey.Address))
                             {
-                                Console.WriteLine("ADDR:"+output.ScriptPubKey.Address+" on block" + block.Result.Height);
+                                Console.WriteLine("ADDR:" + output.ScriptPubKey.Address + " on block" + block.Result.Height);
                             }
                             return "";
                         });
-                }
+                    await voutSession.CloseAsync();
+                });
             }
             else
             {
-                //Create the coinbase node
-                var neo4jTransResp = await session.ExecuteWriteAsync(
+                trxSession = _driver.AsyncSession();
+                //Create the transaction node
+                var neo4jTransResp = await trxSession.ExecuteWriteAsync(
                     async tx =>
                     {
                         var result = await tx.RunAsync(
@@ -207,12 +218,12 @@ for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockC
                         return record[0].As<string>();
                     });
 
-                //Create the coinbase IN_BLOCK relationship
-                neo4jTransResp = await session.ExecuteWriteAsync(
+                //Create the transaction IN_BLOCK relationship
+                neo4jTransResp = await trxSession.ExecuteWriteAsync(
                     async tx =>
                     {
                         var result = await tx.RunAsync(
-                            "MATCH (a:Block), (b:Coinbase) " +
+                            "MATCH (a:Block), (b:Transaction) " +
                             "WHERE a.hash = $block.Result.Hash AND b.txid = $trx.TxId " +
                             "CREATE (b)-[r:IN_BLOCK]->(a) " +
                             "RETURN type(r)",
@@ -221,16 +232,22 @@ for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockC
                         var record = await result.ConsumeAsync();
                         return "";
                     });
-
-                foreach (var input in trx.Vin)
+                var ctVin = new CancellationToken();
+                await Parallel.ForEachAsync(trx.Vin, options, async (input, ctVin) =>
                 {
+                    var vinSession = _driver.AsyncSession();
                     //Create relate the previous output to the input 
-                    var neo4jInputResp = await session.ExecuteWriteAsync(
+                    var neo4jInputResp = await vinSession.ExecuteWriteAsync(
                         async tx =>
                         {
                             var result = await tx.RunAsync(
-                                "MATCH (a:Output),(b:Address) " +
-                                "WHERE a.txid = $input.TxId AND b.address = $input.ScriptPubKey.Address " +
+                                "MATCH (a:Output) " +
+                                "WHERE a.txid = $input.TxId  " +
+                                "MERGE (b:Address {address:$input.ScriptPubKey.Address}) " +
+                                "ON CREATE SET b.asm = $input.ScriptPubKey.Asm, " +
+                                "b.hex = $input.ScriptPubKey.Hex, " +
+                                "b.type = $input.ScriptPubKey.Type, " +
+                                "b.address = $input.ScriptPubKey.Address " +
                                 "CREATE (a)-[r:UNLOCKED_BY]->(b) " +
                                 "RETURN type(r) ",
                                 new { input, trx });
@@ -242,13 +259,14 @@ for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockC
                             }
                             return "";
                         });
-                }
-
+                });
+                var ctVout = new CancellationToken();
                 //Iterate over the outputs in the coinbase transaction
-                foreach (var output in trx.Vout)
+                await Parallel.ForEachAsync(trx.Vout, options, async (output, ctVout) =>
                 {
+                    var voutSession = _driver.AsyncSession();
                     //Create the output node 
-                    var neo4jOutpuResp = await session.ExecuteWriteAsync(
+                    var neo4jOutpuResp = await voutSession.ExecuteWriteAsync(
                         async tx =>
                         {
                             var result = await tx.RunAsync(
@@ -256,11 +274,11 @@ for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockC
                                 "SET a.value = $output.Value, " +
                                 "a.n = $output.N " +
                                 "WITH a " +
-                                "MATCH (b:Coinbase) " +
+                                "MATCH (b:Transaction) " +
                                 "WHERE b.txid = $trx.TxId " +
-                                "CREATE (a)-[r:OUTPUT_OF]->(b) " +
-                                "CREATE (c:Address) " +
-                                "SET c.asm = $output.ScriptPubKey.Asm, " +
+                                "CREATE (a)-[r:HAS_OUTPUT]->(b) " +
+                                "MERGE (c:Address) " +
+                                "ON CREATED SET c.asm = $output.ScriptPubKey.Asm, " +
                                 "c.hex = $output.ScriptPubKey.Hex, " +
                                 "c.type = $output.ScriptPubKey.Type, " +
                                 "c.address = $output.ScriptPubKey.Address " +
@@ -275,9 +293,9 @@ for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockC
                             }
                             return "";
                         });
-                }
+                });
             }
-        }
+        });
 
         prevBlock = block;
     }
@@ -286,3 +304,5 @@ for(int currentHeight = startingHeight; currentHeight < (startingHeight + blockC
         Console.WriteLine(ex.ToString());
     }
 }
+Console.WriteLine($"total seconds: {stopwatch.Elapsed.TotalSeconds}");
+Thread.Sleep(10000);
