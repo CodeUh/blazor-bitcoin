@@ -36,12 +36,9 @@ namespace BlazorBitcoin.Server.Controllers
                     method = "getblockchaininfo",
                     @params = new object[] { }
                 };
-
                 var requestJson = JsonConvert.SerializeObject(request);
                 var content = new StringContent(requestJson, System.Text.Encoding.UTF8, "application/json");
-
                 var response = await _client.PostAsync("", content);
-
                 var responseContent = await response.Content.ReadAsStringAsync();
                 var blockchainInfoResponse = JsonConvert.DeserializeObject<BlockchainInfoResponse>(responseContent);
                 return blockchainInfoResponse;
@@ -64,11 +61,8 @@ namespace BlazorBitcoin.Server.Controllers
                 method = "getblockhash",
                 @params = new object[] { height }
             };
-
             var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(rpcRequest), Encoding.UTF8, "application/json-rpc");
-
             var response = await _client.PostAsync("", content);
-
             var blockHash = JsonConvert.DeserializeObject<dynamic>(await response.Content.ReadAsStringAsync());
 
             rpcRequest = new
@@ -78,13 +72,9 @@ namespace BlazorBitcoin.Server.Controllers
                 method = "getblock",
                 @params = new object[] { blockHash.result.ToString(), 1 }
             };
-            
             content = new StringContent(System.Text.Json.JsonSerializer.Serialize(rpcRequest), Encoding.UTF8, "application/json-rpc");
-
             response = await _client.PostAsync("", content);
-
             var blockJson = await response.Content.ReadAsStringAsync();
-
             var block = System.Text.Json.JsonSerializer.Deserialize<BlockResponse>(blockJson, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase

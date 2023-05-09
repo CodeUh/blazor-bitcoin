@@ -99,10 +99,9 @@
 
         public int WeightM => Weight / 1000000;
 
-        //TODO: think about this...
-        //[JsonProperty("tx")]
-        //[JsonPropertyName("tx")]
-        //public List<Transaction> Transactions { get; set; } = new List<Transaction>();
+        [JsonProperty("tx")]
+        [JsonPropertyName("tx")]
+        public List<Transaction> Transactions { get; set; } = new List<Transaction>();
     }
 
     public class Transaction
@@ -146,6 +145,10 @@
         [JsonProperty("hex")]
         [JsonPropertyName("hex")]
         public string Hex { get; set; } = string.Empty;
+
+        [JsonProperty("fee")]
+        [JsonPropertyName("fee")]
+        public double Fee { get; set; } = 0.00;
     }
 
     public class Vin
@@ -168,7 +171,7 @@
 
         [JsonProperty("scriptSig")]
         [JsonPropertyName("scriptSig")]
-        public ScriptSig ScriptSig { get; set; } = new ScriptSig();
+        public ScriptPubKey ScriptPubKey { get; set; } = new ScriptPubKey();
     }
 
     public class ScriptSig
@@ -210,6 +213,12 @@
         [JsonProperty("type")]
         [JsonPropertyName("type")]
         public string Type { get; set; } = string.Empty;
+
+        [JsonProperty("address")]
+        [JsonPropertyName("address")]
+        public string Address { get; set; } = string.Empty;
+
+
     }
 }
 

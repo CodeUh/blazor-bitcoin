@@ -89,6 +89,10 @@
                     <RadzenText TextStyle="TextStyle.Body1"><b>@(blockLimit)</b></RadzenText>
                 </RadzenStack>
             </RadzenCard>
+            @if (State.Blocks.Count == 0)
+            {
+                return;
+            }
             <RadzenCard class="@(cardBackgroundColor)">
                 <RadzenStack Gap="0">
                     <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-my-0">Range Start Time</RadzenText>
@@ -135,13 +139,7 @@
         </RadzenDataGrid>*@
     </RadzenStack>
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" class="vw-100">
-        <RadzenCard>
-        @for(int i  = 0; i<blockLimit; i++)
-        {
-            var id = "plane" + i;
-            <RadzenImage Path="BTCBlock.png" Style="width: 9rem;" id="@id" class="block plane"></RadzenImage>
-        }
-        </RadzenCard>
+
     </RadzenStack>
 </div>
 
@@ -168,10 +166,11 @@
 
         await RefreshBlockchainInfo();
 
-        var timer2 = new System.Timers.Timer(tRate);
-        timer2.Elapsed += async (sender, e) => await TickTock();
-        timer2.AutoReset = true;
-        timer2.Enabled = true;
+        //TODO: UNDO
+        //var timer2 = new System.Timers.Timer(tRate);
+        //timer2.Elapsed += async (sender, e) => await TickTock();
+        //timer2.AutoReset = true;
+        //timer2.Enabled = true;
     }
 
     private async Task TickTock()
