@@ -1,18 +1,14 @@
 ﻿using System.Net.Http.Headers;
 using System.Net;
 using Neo4j.Driver;
-using System;
 using System.Text;
 using Newtonsoft.Json;
 using BlazorBitcoin.Shared.Models;
 using System.Text.Json;
-using System.Runtime.CompilerServices;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
 ServicePointManager.DefaultConnectionLimit = 12;
-var options = new ParallelOptions { MaxDegreeOfParallelism = 32 };
+var options = new ParallelOptions { MaxDegreeOfParallelism = 12 };
 var client = new HttpClient();
 client.BaseAddress = new Uri("http://localhost:8332/");
 var authValue = new AuthenticationHeaderValue(
@@ -29,26 +25,37 @@ _driver = GraphDatabase.Driver(uri, AuthTokens.Basic(Environment.GetEnvironmentV
 await using var session = _driver.AsyncSession();
 
 //var startingHeight = 788802;
-var startingHeight = 0;
-var blockCount = 2000;
+var startingHeight = 60000;
+var blockCount = 500000;
+
 BlockResponse prevBlock = null;
 var stopwatch = new Stopwatch();
 stopwatch.Start();
+var nextBlockHash = "";
 for (int currentHeight = startingHeight; currentHeight < (startingHeight + blockCount); currentHeight++)
 {
     try
     {
-        //get the block hash for current height
-        var rpcRequest = new
+        dynamic rpcRequest;
+        dynamic blockHash = new System.Dynamic.ExpandoObject(); ;
+        if (string.IsNullOrEmpty(nextBlockHash))
         {
-            jsonrpc = "1.0",
-            id = "1",
-            method = "getblockhash",
-            @params = new object[] { currentHeight }
-        };
-        var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(rpcRequest), Encoding.UTF8, "application/json-rpc");
-        var response = await client.PostAsync("", content);
-        var blockHash = JsonConvert.DeserializeObject<dynamic>(await response.Content.ReadAsStringAsync());
+            //get the block hash for current height
+            rpcRequest = new
+            {
+                jsonrpc = "1.0",
+                id = "1",
+                method = "getblockhash",
+                @params = new object[] { currentHeight }
+            };
+            var hasContent = new StringContent(System.Text.Json.JsonSerializer.Serialize(rpcRequest), Encoding.UTF8, "application/json-rpc");
+            var hashResponse = await client.PostAsync("", hasContent);
+            blockHash = JsonConvert.DeserializeObject<dynamic>(await hashResponse.Content.ReadAsStringAsync());
+        } 
+        else
+        {
+            blockHash.result = nextBlockHash;
+        }
 
         //get the block with hash for current height
         rpcRequest = new
@@ -58,14 +65,14 @@ for (int currentHeight = startingHeight; currentHeight < (startingHeight + block
             method = "getblock",
             @params = new object[] { blockHash.result.ToString(), 2 }
         };
-        content = new StringContent(System.Text.Json.JsonSerializer.Serialize(rpcRequest), Encoding.UTF8, "application/json-rpc");
-        response = await client.PostAsync("", content);
+        var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(rpcRequest), Encoding.UTF8, "application/json-rpc");
+        var response = await client.PostAsync("", content);
         var blockJson = await response.Content.ReadAsStringAsync();
         var block = System.Text.Json.JsonSerializer.Deserialize<BlockResponse>(blockJson, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
-
+        nextBlockHash = block.Result.NextBlockHash;
         //create the block node
         var neo4jBlockResp = await session.ExecuteWriteAsync(
             async tx =>
@@ -94,17 +101,20 @@ for (int currentHeight = startingHeight; currentHeight < (startingHeight + block
                 return record[0].As<string>();
             });
 
-        //create the block PREV_BLOCK and NEXT_BLOCK relationships
+        //create the block HAS_CHAIN relationships
         if (prevBlock != null)
         {
             neo4jBlockResp = await session.ExecuteWriteAsync(
                 async tx =>
                 {
+                    //TODO:Set properties on the relationship including the hash of the next or previous block
                     var result = await tx.RunAsync(
                         "MATCH (a:Block), (b:Block) " +
                         "WHERE a.hash = $block.Result.Hash AND b.hash = $prevBlock.Result.Hash " +
                         "CREATE (a)-[r:HAS_CHAIN]->(b) " +
+                        "SET r.previousblockhash = $block.Result.PreviousBlockHash " +
                         "CREATE (b)-[r2:HAS_CHAIN]->(a) " +
+                        "SET r2.nextblockhash = $block.Result.nextblockhash " +
                         "RETURN type(r)",
                          new { prevBlock, block });
 
@@ -118,120 +128,41 @@ for (int currentHeight = startingHeight; currentHeight < (startingHeight + block
         {
             var trxSession = _driver.AsyncSession();
             //check if the transaction is a coinbase transaction
-            if (!string.IsNullOrEmpty(trx.Vin[0].Coinbase))
-            {
-                //Create the coinbase node
-                var neo4jTransResp = await trxSession.ExecuteWriteAsync(
-                    async tx =>
-                    {
-                        var result = await tx.RunAsync(
-                            "CREATE (a:Transaction) " +
-                            "SET a.txid = $trx.TxId, " +
-                            "a.hash = $trx.Hash, " +
-                            "a.version = $trx.Version, " +
-                            "a.size = $trx.Size, " +
-                            "a.vsize = $trx.VSize, " +
-                            "a.weight = $trx.Weight, " +
-                            "a.locktime = $trx.LockTime, " +
-                            "a.hex = $trx.Hex, " +
-                            "a.coinbase = $trx.Vin[0].Coinbase, " +
-                            "a.sequence = $trx.Vin[0].Sequence " +
-                            "RETURN a.hash + ', from node ' + id(a)",
-                            new { trx });
-
-                        var record = await result.SingleAsync();
-                        return record[0].As<string>();
-                    });
-
-                //Create the coinbase IN_BLOCK relationship
-                neo4jTransResp = await trxSession.ExecuteWriteAsync(
-                    async tx =>
-                    {
-                        var result = await tx.RunAsync(
-                            "MATCH (a:Block), (b:Transaction) " +
-                            "WHERE a.hash = $block.Result.Hash AND b.txid = $trx.TxId " +
-                            "CREATE (b)-[r:IN_BLOCK]->(a) " +
-                            "CREATE (a)-[r2:HAS_COINBASE]->(b) " +
-                            "RETURN type(r)",
-                             new { trx, block });
-
-                        var record = await result.ConsumeAsync();
-                        return "";
-                    });
-                var ctVout = new CancellationToken();
-                //Iterate over the outputs in the transaction
-                await Parallel.ForEachAsync(trx.Vout, options, async (output, ctVout) =>
+            //todo, get rid of nesting
+            
+            var hasCoinbase = !string.IsNullOrEmpty(trx.Vin[0].Coinbase);
+            //Create the coinbase node
+            var neo4jTransResp = await trxSession.ExecuteWriteAsync(
+                async tx =>
                 {
-                    var voutSession = _driver.AsyncSession();
-                    //Create the output node 
-                    var neo4jOutputResp = await voutSession.ExecuteWriteAsync(
-                        async tx =>
-                        {
-                            var result = await tx.RunAsync(
-                                "CREATE (a:Output) " +
-                                "SET a.value = $output.Value, " +
-                                "a.n = $output.N " +
-                                "WITH a " +
-                                "MATCH (b:Transaction) " +
-                                "WHERE b.txid = $trx.TxId " +
-                                "CREATE (a)-[r:HAS_OUTPUT]->(b) " +
-                                "CREATE (c:Address) " +
-                                "SET c.asm = $output.ScriptPubKey.Asm, " +
-                                "c.hex = $output.ScriptPubKey.Hex, " +
-                                "c.type = $output.ScriptPubKey.Type, " +
-                                "c.address = $output.ScriptPubKey.Address " +
-                                "CREATE (a)-[d:LOCKED_BY]->(c) " +
-                                "RETURN type(r) ",
-                                new { output, trx });
+                    var result = await tx.RunAsync(
+                        "CREATE (a:Transaction) " +
+                        "SET a.txid = $trx.TxId, " +
+                        "a.hash = $trx.Hash, " +
+                        "a.version = $trx.Version, " +
+                        "a.size = $trx.Size, " +
+                        "a.vsize = $trx.VSize, " +
+                        "a.weight = $trx.Weight, " +
+                        "a.locktime = $trx.LockTime, " +
+                        "a.hex = $trx.Hex " +
+                        (hasCoinbase ? "CREATE (c:Coinbase) " +
+                        "SET c.coinbase =  $trx.Vin[0].Coinbase, " +
+                        "c.sequence =  $trx.Vin[0].Sequence " : " ") +
+                        "WITH  a" +
+                        (hasCoinbase ? ",c " : " ") +
+                        "MATCH (b:Block) " +
+                        "WHERE b.hash = $block.Result.Hash " +
+                        "CREATE (a)-[r:IN_BLOCK]->(b) " +
+                        (hasCoinbase ? "CREATE (b)-[r2:HAS_COINBASE]->(c) " +
+                        "CREATE (c)-[r3:IN]->(a) " : " ") +
+                        "RETURN a.hash + ', from node ' + id(a) ",
+                        new { trx, block }); ;
 
-                            var record = await result.ConsumeAsync();
-                            if (!string.IsNullOrEmpty(output.ScriptPubKey.Address))
-                            {
-                                Console.WriteLine("ADDR:" + output.ScriptPubKey.Address + " on block" + block.Result.Height);
-                            }
-                            return "";
-                        });
-                    await voutSession.CloseAsync();
+                    var record = await result.SingleAsync();
+                    return record[0].As<string>();
                 });
-            }
-            else
+            if (!hasCoinbase)
             {
-                trxSession = _driver.AsyncSession();
-                //Create the transaction node
-                var neo4jTransResp = await trxSession.ExecuteWriteAsync(
-                    async tx =>
-                    {
-                        var result = await tx.RunAsync(
-                            "CREATE (a:Transaction) " +
-                            "SET a.txid = $trx.TxId, " +
-                            "a.hash = $trx.Hash, " +
-                            "a.version = $trx.Version, " +
-                            "a.size = $trx.Size, " +
-                            "a.vsize = $trx.VSize, " +
-                            "a.weight = $trx.Weight, " +
-                            "a.locktime = $trx.LockTime, " +
-                            "a.hex = $trx.Hex " +
-                            "RETURN a.hash + ', from node ' + id(a)",
-                            new { trx });
-
-                        var record = await result.SingleAsync();
-                        return record[0].As<string>();
-                    });
-
-                //Create the transaction IN_BLOCK relationship
-                neo4jTransResp = await trxSession.ExecuteWriteAsync(
-                    async tx =>
-                    {
-                        var result = await tx.RunAsync(
-                            "MATCH (a:Block), (b:Transaction) " +
-                            "WHERE a.hash = $block.Result.Hash AND b.txid = $trx.TxId " +
-                            "CREATE (b)-[r:IN_BLOCK]->(a) " +
-                            "RETURN type(r)",
-                             new { trx, block });
-
-                        var record = await result.ConsumeAsync();
-                        return "";
-                    });
                 var ctVin = new CancellationToken();
                 await Parallel.ForEachAsync(trx.Vin, options, async (input, ctVin) =>
                 {
@@ -240,61 +171,60 @@ for (int currentHeight = startingHeight; currentHeight < (startingHeight + block
                     var neo4jInputResp = await vinSession.ExecuteWriteAsync(
                         async tx =>
                         {
+                            var hasAddress = !string.IsNullOrEmpty(input.ScriptPubKey.Address);
                             var result = await tx.RunAsync(
-                                "MATCH (a:Output) " +
-                                "WHERE a.txid = $input.TxId  " +
-                                "MERGE (b:Address {address:$input.ScriptPubKey.Address}) " +
-                                "ON CREATE SET b.asm = $input.ScriptPubKey.Asm, " +
-                                "b.hex = $input.ScriptPubKey.Hex, " +
-                                "b.type = $input.ScriptPubKey.Type, " +
-                                "b.address = $input.ScriptPubKey.Address " +
-                                "CREATE (a)-[r:UNLOCKED_BY]->(b) " +
+                                "MATCH (a:Output {txid: $input.TxId, n: $input.Vout}) " +
+                                (hasAddress ? "MERGE (b:Address {address:$input.ScriptPubKey.Address}) " +
+                                "SET b.address = $input.ScriptPubKey.Address " +
+                                "CREATE (a)-[r:UNLOCKED_BY]->(b) " : "") +
+                                "WITH a " +
+                                "MATCH (c: Transaction {txid:$trx.TxId}) " +
+                                "CREATE (a)-[r:IN]->(c) " +
+                                "SET r.hex = $input.ScriptPubKey.Hex, " +
+                                "r.type = $input.ScriptPubKey.Type, " +
+                                "r.asm = $input.ScriptPubKey.Asm " +
                                 "RETURN type(r) ",
                                 new { input, trx });
 
                             var record = await result.ConsumeAsync();
-                            if (!string.IsNullOrEmpty(input.ScriptPubKey.Address))
-                            {
-                                Console.WriteLine("ADDR:" + input.ScriptPubKey.Address + " on block" + block.Result.Height);
-                            }
-                            return "";
-                        });
-                });
-                var ctVout = new CancellationToken();
-                //Iterate over the outputs in the coinbase transaction
-                await Parallel.ForEachAsync(trx.Vout, options, async (output, ctVout) =>
-                {
-                    var voutSession = _driver.AsyncSession();
-                    //Create the output node 
-                    var neo4jOutpuResp = await voutSession.ExecuteWriteAsync(
-                        async tx =>
-                        {
-                            var result = await tx.RunAsync(
-                                "CREATE (a:Output) " +
-                                "SET a.value = $output.Value, " +
-                                "a.n = $output.N " +
-                                "WITH a " +
-                                "MATCH (b:Transaction) " +
-                                "WHERE b.txid = $trx.TxId " +
-                                "CREATE (a)-[r:HAS_OUTPUT]->(b) " +
-                                "MERGE (c:Address) " +
-                                "ON CREATED SET c.asm = $output.ScriptPubKey.Asm, " +
-                                "c.hex = $output.ScriptPubKey.Hex, " +
-                                "c.type = $output.ScriptPubKey.Type, " +
-                                "c.address = $output.ScriptPubKey.Address " +
-                                "CREATE (a)-[d:LOCKED_BY]->(c) " +
-                                "RETURN type(r) ",
-                                new { output, trx });
-
-                            var record = await result.ConsumeAsync();
-                            if (!string.IsNullOrEmpty(output.ScriptPubKey.Address))
-                            {
-                                Console.WriteLine("ADDR:" + output.ScriptPubKey.Address + " on block" + block.Result.Height);
-                            }
                             return "";
                         });
                 });
             }
+                
+            var ctVout = new CancellationToken();
+            //Iterate over the outputs in the transaction
+            await Parallel.ForEachAsync(trx.Vout, options, async (output, ctVout) =>
+            {
+                var voutSession = _driver.AsyncSession();
+                //Create the output node 
+                var neo4jOutputResp = await voutSession.ExecuteWriteAsync(
+                    async tx =>
+                    {
+                        var hasAddress = !string.IsNullOrEmpty(output.ScriptPubKey.Address);
+                        var result = await tx.RunAsync(
+                            "MERGE (a:Output {txid: $trx.TxId, n:$output.N}) " +
+                            " " +
+                            "SET a.value = $output.Value, " +
+                            "a.n = $output.N " +
+                            "WITH a " +
+                            "MATCH (b:Transaction) " +
+                            "WHERE b.txid = $trx.TxId " +
+                            "CREATE (b)-[r:OUT]->(a) " +
+                            "SET r.asm = $output.ScriptPubKey.Asm, " +
+                            "r.hex = $output.ScriptPubKey.Hex, " +
+                            "r.type = $output.ScriptPubKey.Type " +
+                            (hasAddress ? "MERGE (c:Address {address:$output.ScriptPubKey.Address}) " + 
+                            "SET c.address = $output.ScriptPubKey.Address " + 
+                            "CREATE (a)-[d:LOCKED_BY]->(c) " : " ") +
+                            "RETURN type(r) ",
+                            new { output, trx });
+
+                        var record = await result.ConsumeAsync();
+                        return "";
+                    });
+                await voutSession.CloseAsync();
+            });
         });
 
         prevBlock = block;
@@ -305,4 +235,4 @@ for (int currentHeight = startingHeight; currentHeight < (startingHeight + block
     }
 }
 Console.WriteLine($"total seconds: {stopwatch.Elapsed.TotalSeconds}");
-Thread.Sleep(10000);
+Console.ReadLine();

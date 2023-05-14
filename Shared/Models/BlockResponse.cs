@@ -172,6 +172,10 @@
         [JsonProperty("scriptSig")]
         [JsonPropertyName("scriptSig")]
         public ScriptPubKey ScriptPubKey { get; set; } = new ScriptPubKey();
+
+        [JsonProperty("value")]
+        [JsonPropertyName("value")]
+        public double Value { get; set; } = 0;
     }
 
     public class ScriptSig
@@ -187,9 +191,21 @@
 
     public class Vout
     {
+        [JsonProperty("coinbase")]
+        [JsonPropertyName("coinbase")]
+        public string Coinbase { get; set; } = string.Empty;
+
+        [JsonProperty("sequence")]
+        [JsonPropertyName("sequence")]
+        public long Sequence { get; set; } = 0;
+
         [JsonProperty("value")]
         [JsonPropertyName("value")]
         public double Value { get; set; } = 0;
+
+        [JsonProperty("txid")]
+        [JsonPropertyName("txid")]
+        public string TxId { get; set; } = string.Empty;
 
         [JsonProperty("n")]
         [JsonPropertyName("n")]
