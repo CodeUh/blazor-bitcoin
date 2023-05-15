@@ -8,7 +8,6 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using static System.Collections.Specialized.BitVector32;
 
 namespace BlazorBitcoin.Shared
 {
@@ -29,6 +28,46 @@ namespace BlazorBitcoin.Shared
             _driver = GraphDatabase.Driver(Environment.GetEnvironmentVariable("neo4juri"),
                 AuthTokens.Basic(Environment.GetEnvironmentVariable("neo4juser"),
                 Environment.GetEnvironmentVariable("neo4jpw")));
+        }
+
+        public async Task<BlockchainInfoResponse> GetBlockchainInfo()
+        {
+            //TODO: think about how to handle this error and not swallow and return a default
+            var blockchainInfo = new BlockchainInfoResponse() { Result = new BlockchainInfoResult() { Blocks = 1 } };
+            try
+            {
+                var request = new
+                {
+                    jsonrpc = "1.0",
+                    id = "1",
+                    method = "getblockchaininfo",
+                    @params = new object[] { }
+                };
+                var requestJson = JsonConvert.SerializeObject(request);
+                var content = new StringContent(requestJson, System.Text.Encoding.UTF8, "application/json");
+                var response = await _client.PostAsync("", content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var blockchainInfoResponse = JsonConvert.DeserializeObject<BlockchainInfoResponse>(responseContent);
+                return blockchainInfoResponse;
+            }
+            catch (Exception ex)
+            {
+                return blockchainInfo;
+            }
+        }
+
+        public async Task<int> GetDBHeight()
+        {
+            var session = _driver.AsyncSession();
+            var result = await session.ExecuteReadAsync(async tx =>
+            {
+                var cypher = "MATCH (b:Block) RETURN max(b.height) AS height";
+                var cursor = await tx.RunAsync(cypher);
+                var record = await cursor.SingleAsync();
+                return record["height"].As<int>();
+            });
+            await session.CloseAsync();
+            return result;
         }
 
         public async Task LoadBlock(int height)
