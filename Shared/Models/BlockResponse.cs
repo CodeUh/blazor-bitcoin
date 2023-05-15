@@ -101,7 +101,7 @@
 
         [JsonProperty("tx")]
         [JsonPropertyName("tx")]
-        public List<Transaction> Transactions { get; set; } = new List<Transaction>();
+        public List<string> Transactions { get; set; } = new List<string>();
     }
 
     public class Transaction

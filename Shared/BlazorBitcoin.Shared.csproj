@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Models\Neo4j\**" />
+    <EmbeddedResource Remove="Models\Neo4j\**" />
+    <None Remove="Models\Neo4j\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Neo4j.Driver" Version="5.8.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
