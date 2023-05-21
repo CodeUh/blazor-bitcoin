@@ -1,0 +1,1 @@
+Start-Process "F:\Apps\CoinbaseProcessor\BlazorBitcoin.CoinbaseProcessor.exe" -WindowStyle Hidden

@@ -20,15 +20,26 @@
         public string Id { get; set; } = string.Empty;
     }
 
-    public class BlockResult
+    public class TransactionResponse
+    {
+        [JsonProperty("result")]
+        [JsonPropertyName("result")]
+        public Transaction Result { get; set; } = new Transaction();
+
+        [JsonProperty("error")]
+        [JsonPropertyName("error")]
+        public object Error { get; set; } = new object();
+
+        [JsonProperty("id")]
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+    }
+
+    public class BlockResult 
     {
         [JsonProperty("hash")]
         [JsonPropertyName("hash")]
         public string Hash { get; set; } = string.Empty;
-
-        [JsonProperty("confirmations")]
-        [JsonPropertyName("confirmations")]
-        public int Confirmations { get; set; } = 0;
 
         [JsonProperty("height")]
         [JsonPropertyName("height")]
@@ -103,6 +114,8 @@
         [JsonPropertyName("tx")]
         public List<string> Transactions { get; set; } = new List<string>();
     }
+
+
 
     public class Transaction
     {

@@ -1,12 +1,4 @@
-﻿using System.Net.Http.Headers;
-using System.Net;
-using Neo4j.Driver;
-using System.Text;
-using Newtonsoft.Json;
-using BlazorBitcoin.Shared.Models;
-using System.Text.Json;
-using System.Diagnostics;
-using BlazorBitcoin.Shared;
+﻿using BlazorBitcoin.Shared;
 
 var logic = new LoadLogic();
 var pollTime = 5000;

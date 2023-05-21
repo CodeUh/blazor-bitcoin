@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorBitcoin.Client", "Cli
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorBitcoin.Shared", "Shared\BlazorBitcoin.Shared.csproj", "{7A3D21DF-AE15-45FB-999C-25443A6F0891}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorBitcoin.Console", "Console\BlazorBitcoin.Console.csproj", "{F79AA710-C7F5-4FCB-B336-236F36BA3FD4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorBitcoin.BlockProcessor", "BlockProcessor\BlazorBitcoin.BlockProcessor.csproj", "{F79AA710-C7F5-4FCB-B336-236F36BA3FD4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorBitcoin.CoinbaseProcessor", "CoinbaseProcessor\BlazorBitcoin.CoinbaseProcessor.csproj", "{E068FD22-52F7-44D2-9356-998769969260}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{F79AA710-C7F5-4FCB-B336-236F36BA3FD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F79AA710-C7F5-4FCB-B336-236F36BA3FD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F79AA710-C7F5-4FCB-B336-236F36BA3FD4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E068FD22-52F7-44D2-9356-998769969260}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E068FD22-52F7-44D2-9356-998769969260}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E068FD22-52F7-44D2-9356-998769969260}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E068FD22-52F7-44D2-9356-998769969260}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

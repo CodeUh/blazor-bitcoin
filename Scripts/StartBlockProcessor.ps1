@@ -1,0 +1,1 @@
+Start-Process "F:\Apps\BlockProcessor\BlazorBitcoin.BlockProcessor.exe" -WindowStyle Hidden

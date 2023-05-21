@@ -1,0 +1,1 @@
+neo4j-admin database backup neo4j --to-path="F:\Neo4j\Neo4j Backups"

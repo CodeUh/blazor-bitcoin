@@ -89,10 +89,7 @@
                     <RadzenText TextStyle="TextStyle.Body1"><b>@(blockLimit)</b></RadzenText>
                 </RadzenStack>
             </RadzenCard>
-            @if (State.Blocks.Count == 0)
-            {
-                return;
-            }
+            @if (State.Blocks.Count == 0) { return; }
             <RadzenCard class="@(cardBackgroundColor)">
                 <RadzenStack Gap="0">
                     <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-my-0">Range Start Time</RadzenText>
@@ -167,10 +164,10 @@
         await RefreshBlockchainInfo();
 
         //TODO: UNDO
-        //var timer2 = new System.Timers.Timer(tRate);
-        //timer2.Elapsed += async (sender, e) => await TickTock();
-        //timer2.AutoReset = true;
-        //timer2.Enabled = true;
+        var timer2 = new System.Timers.Timer(tRate);
+        timer2.Elapsed += async (sender, e) => await TickTock();
+        timer2.AutoReset = true;
+        timer2.Enabled = true;
     }
 
     private async Task TickTock()
